@@ -58,6 +58,9 @@ model AccessRequest {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   
   @@map("access_requests")
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
 }
 
 enum Role {
