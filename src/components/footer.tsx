@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { BookOpen, Mail, Phone, MapPin, Github, Twitter, Linkedin, Instagram } from 'lucide-react';
+import { BookOpen, Mail, Phone, MapPin, Github, Twitter, Linkedin, Instagram, Facebook, Youtube } from 'lucide-react';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -17,8 +17,8 @@ export function Footer() {
   };
 
   const socialLinks = [
-    { name: 'Github', icon: Github, href: '#', color: 'hover:text-gray-600' },
-    { name: 'Twitter', icon: Twitter, href: '#', color: 'hover:text-blue-400' },
+    { name: 'Facebook', icon: Facebook, href: 'https://www.facebook.com/mehedismathacademy', color: 'hover:text-blue-600' },
+    { name: 'Youtube', icon: Youtube, href: 'https://www.youtube.com/@mehedismathacademy', color: 'hover:text-red-500' },
     { name: 'Linkedin', icon: Linkedin, href: '#', color: 'hover:text-blue-600' },
     { name: 'Instagram', icon: Instagram, href: '#', color: 'hover:text-pink-600' },
   ];
