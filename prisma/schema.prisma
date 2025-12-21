@@ -33,6 +33,7 @@ model Course {
   title       String
   description String?
   bannerText  String?
+  bannerImage String?
   pageLink    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -11,6 +11,7 @@ interface Course {
   title: string;
   description?: string;
   bannerText?: string;
+  bannerImage?: string;
   pageLink?: string;
   createdAt: string;
 }
@@ -77,13 +78,12 @@ export function CourseCard({ course, onRequestAccess, hasRequested = false, requ
     >
       <div className="h-full bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden">
         <div className="relative h-48 overflow-hidden group">
-          {course.bannerText && course.bannerText.trim() ? (
-            <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-              <div className="text-white text-center px-4">
-                <p className="text-2xl font-bold mb-2 leading-tight">{course.bannerText}</p>
-                <div className="text-4xl">✨</div>
-              </div>
-            </div>
+          {course.bannerImage ? (
+            <img
+              src={course.bannerImage}
+              alt={course.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
               <div className="text-white text-center">

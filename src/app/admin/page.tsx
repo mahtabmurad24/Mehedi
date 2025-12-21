@@ -31,7 +31,7 @@ export default function AdminPage() {
 
   const handleAdminLogin = async (email: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/admin-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -51,7 +51,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { title, description, bannerText, pageLink } = await request.json();
+    const { title, description, bannerImage, pageLink } = await request.json();
 
     // Check if user is admin
     const sessionCookie = request.cookies.get('user-session');
@@ -82,7 +82,7 @@ export async function PATCH(
       data: {
         ...(title && { title }),
         ...(description && { description }),
-        ...(bannerText && { bannerText }),
+        ...(bannerImage && { bannerImage }),
         ...(pageLink && { pageLink })
       }
     });

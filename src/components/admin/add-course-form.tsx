@@ -19,7 +19,7 @@ export function AddCourseForm({ onCourseAdded }: AddCourseFormProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    bannerText: '',
+    bannerImage: '',
     pageLink: ''
   });
 
@@ -41,7 +41,7 @@ export function AddCourseForm({ onCourseAdded }: AddCourseFormProps) {
         setFormData({
           title: '',
           description: '',
-          bannerText: '',
+          bannerImage: '',
           pageLink: ''
         });
         onCourseAdded();
@@ -98,16 +98,16 @@ export function AddCourseForm({ onCourseAdded }: AddCourseFormProps) {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="bannerText">Course Banner Text</Label>
+            <Label htmlFor="bannerImage">Course Banner Image URL</Label>
             <Input
-              id="bannerText"
-              placeholder="Enter gorgeous banner text"
-              value={formData.bannerText}
-              onChange={(e) => setFormData({...formData, bannerText: e.target.value})}
+              id="bannerImage"
+              placeholder="Enter banner image URL"
+              value={formData.bannerImage}
+              onChange={(e) => setFormData({...formData, bannerImage: e.target.value})}
               required
             />
             <p className="text-xs text-gray-500">
-              Enter attractive text to display as the course banner
+              Enter the URL of the image to display as the course banner
             </p>
           </div>
           

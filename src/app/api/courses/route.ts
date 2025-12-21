@@ -38,11 +38,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, bannerText, pageLink } = await request.json();
+    const { title, description, bannerImage, pageLink } = await request.json();
 
-    if (!title || !description || !bannerText || !pageLink) {
+    if (!title || !description || !bannerImage || !pageLink) {
       return NextResponse.json(
-        { error: 'All fields are required: title, description, bannerText, pageLink' },
+        { error: 'All fields are required: title, description, bannerImage, pageLink' },
         { status: 400 }
       );
     }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description,
-        bannerText,
+        bannerImage,
         pageLink
       }
     });

@@ -16,6 +16,7 @@ interface Course {
   title: string;
   description?: string;
   bannerText?: string;
+  bannerImage?: string;
   pageLink?: string;
   createdAt: string;
 }

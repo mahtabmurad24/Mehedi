@@ -25,6 +25,7 @@ interface Course {
   title: string;
   description?: string;
   bannerText?: string;
+  bannerImage?: string;
   pageLink?: string;
   createdAt: string;
   updatedAt: string;
@@ -38,10 +39,12 @@ export function AdminCourseManagement() {
   const [loading, setLoading] = useState(true);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number; aspectRatio: string } | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    bannerText: '',
+    bannerImage: '',
     pageLink: ''
   });
 
@@ -115,9 +118,10 @@ export function AdminCourseManagement() {
     setFormData({
       title: course.title,
       description: course.description || '',
-      bannerText: course.bannerText || '',
+      bannerImage: course.bannerImage || '',
       pageLink: course.pageLink || ''
     });
+    setImageDimensions(null); // Reset dimensions when editing
     setIsDialogOpen(true);
   };
 
@@ -148,9 +152,48 @@ export function AdminCourseManagement() {
     setFormData({
       title: '',
       description: '',
-      bannerText: '',
+      bannerImage: '',
       pageLink: ''
     });
+    setImageDimensions(null);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formDataUpload,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({ ...prev, bannerImage: data.url }));
+
+        // Get image dimensions
+        const img = new Image();
+        img.onload = () => {
+          const aspectRatio = (img.width / img.height).toFixed(2);
+          setImageDimensions({
+            width: img.width,
+            height: img.height,
+            aspectRatio: `${img.width}:${img.height} (${aspectRatio}:1)`
+          });
+        };
+        img.src = URL.createObjectURL(file);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading) {
@@ -169,16 +212,21 @@ export function AdminCourseManagement() {
           <p className="text-gray-600">Create and manage courses</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
+            <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add Course
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="space-y-3">
+              <DialogTitle className="text-xl">
                 {editingCourse ? 'Edit Course' : 'Add New Course'}
               </DialogTitle>
               <DialogDescription>
@@ -186,43 +234,71 @@ export function AdminCourseManagement() {
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Course Title *</Label>
+                <Label htmlFor="title" className="text-sm font-medium">Course Title *</Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter course title"
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="text-sm font-medium">Description</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter course description"
                   rows={3}
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="bannerText">Banner Text *</Label>
+              <div className="space-y-3">
+                <Label htmlFor="bannerImage" className="text-sm font-medium">Banner Image {!editingCourse ? '*' : '(Optional)'}</Label>
                 <Input
-                  id="bannerText"
-                  value={formData.bannerText}
-                  onChange={(e) => setFormData({ ...formData, bannerText: e.target.value })}
-                  placeholder="Enter gorgeous banner text"
-                  required
+                  id="bannerImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleFileUpload(file);
+                    }
+                  }}
+                  disabled={uploading}
+                  required={!editingCourse}
                 />
+                {uploading && (
+                  <p className="text-sm text-blue-600 flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Uploading...
+                  </p>
+                )}
+                {formData.bannerImage && (
+                  <div className="mt-3 p-3 border rounded-lg bg-gray-50">
+                    <img
+                      src={formData.bannerImage}
+                      alt="Banner preview"
+                      className="w-full h-24 object-cover rounded-md border"
+                    />
+                    {imageDimensions && (
+                      <p className="text-xs text-gray-600 mt-2 text-center">
+                        Dimensions: {imageDimensions.aspectRatio}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <p className="text-xs text-gray-500">
-                  Enter attractive text to display as the course banner
+                  Upload an image for the course banner (recommended aspect ratio: 16:9)
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="pageLink">Course Page Link *</Label>
+                <Label htmlFor="pageLink" className="text-sm font-medium">Course Page Link *</Label>
                 <Input
                   id="pageLink"
                   value={formData.pageLink}
@@ -232,11 +308,11 @@ export function AdminCourseManagement() {
                 />
               </div>
               
-              <DialogFooter>
+              <DialogFooter className="flex gap-3 pt-6">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" disabled={uploading}>
                   {editingCourse ? 'Update Course' : 'Create Course'}
                 </Button>
               </DialogFooter>
@@ -266,16 +342,17 @@ export function AdminCourseManagement() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Requests</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[200px]">Course</TableHead>
+                    <TableHead className="min-w-[200px]">Description</TableHead>
+                    <TableHead className="min-w-[100px]">Requests</TableHead>
+                    <TableHead className="min-w-[100px]">Created</TableHead>
+                    <TableHead className="min-w-[120px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {courses.map((course) => (
                   <TableRow key={course.id}>
@@ -331,6 +408,7 @@ export function AdminCourseManagement() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       )}
