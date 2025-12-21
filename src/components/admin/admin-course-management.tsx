@@ -18,7 +18,28 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Trash2, ExternalLink, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+import { CSS } from '@dnd-kit/utilities';
 
 interface Course {
   id: string;
@@ -29,9 +50,106 @@ interface Course {
   pageLink?: string;
   createdAt: string;
   updatedAt: string;
+  order: number;
   _count?: {
     accessRequests: number;
   };
+}
+
+interface SortableTableRowProps {
+  course: Course;
+  onEdit: (course: Course) => void;
+  onDelete: (courseId: string) => void;
+  deletingCourseId: string | null;
+}
+
+function SortableTableRow({ course, onEdit, onDelete, deletingCourseId }: SortableTableRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: course.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium text-gray-500">#{course.order}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center space-x-2">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab hover:bg-gray-100 p-1 rounded"
+          >
+            <GripVertical className="h-4 w-4 text-gray-400" />
+          </button>
+          <div>
+            <div className="font-medium">{course.title}</div>
+            {course.pageLink && (
+              <a 
+                href={course.pageLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                View Course
+              </a>
+            )}
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="max-w-xs truncate">
+          {course.description || 'No description'}
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant="outline">
+          {course._count?.accessRequests || 0} requests
+        </Badge>
+      </TableCell>
+      <TableCell>
+        {new Date(course.createdAt).toLocaleDateString()}
+      </TableCell>
+      <TableCell>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(course)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onDelete(course.id)}
+            className="text-red-600 hover:text-red-800"
+            disabled={deletingCourseId === course.id}
+          >
+            {deletingCourseId === course.id ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 }
 
 export function AdminCourseManagement() {
@@ -40,6 +158,8 @@ export function AdminCourseManagement() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number; aspectRatio: string } | null>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -48,9 +168,25 @@ export function AdminCourseManagement() {
     pageLink: ''
   });
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   useEffect(() => {
     fetchCourses();
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      const interval = setInterval(() => {
+        updateRequestCounts();
+      }, 30000); // Update every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [loading, courses]);
 
   const fetchCourses = async () => {
     try {
@@ -83,8 +219,75 @@ export function AdminCourseManagement() {
     }
   };
 
+  const updateRequestCounts = async () => {
+    try {
+      const updatedCourses = await Promise.all(
+        courses.map(async (course) => {
+          const requestsResponse = await fetch(`/api/access-requests?courseId=${course.id}`);
+          if (requestsResponse.ok) {
+            const requestsData = await requestsResponse.json();
+            return {
+              ...course,
+              _count: {
+                accessRequests: requestsData.requests.length
+              }
+            };
+          }
+          return course;
+        })
+      );
+      setCourses(updatedCourses);
+    } catch (error) {
+      console.error('Error updating request counts:', error);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = courses.findIndex((course) => course.id === active.id);
+      const newIndex = courses.findIndex((course) => course.id === over.id);
+
+      const reorderedCourses = arrayMove(courses, oldIndex, newIndex);
+
+      // Update local state immediately for better UX
+      setCourses(reorderedCourses);
+
+      // Update order values (1-based indexing)
+      const courseOrders = reorderedCourses.map((course, index) => ({
+        id: course.id,
+        order: index + 1
+      }));
+
+      try {
+        const response = await fetch('/api/courses/reorder', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ courseOrders }),
+        });
+
+        if (!response.ok) {
+          // Revert on error
+          setCourses(courses);
+          toast.error('Failed to update course order');
+        } else {
+          toast.success('Course order updated successfully');
+        }
+      } catch (error) {
+        // Revert on error
+        setCourses(courses);
+        console.error('Error updating course order:', error);
+        toast.error('Failed to update course order');
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     try {
       const url = editingCourse ? `/api/courses/${editingCourse.id}` : '/api/courses';
@@ -110,6 +313,8 @@ export function AdminCourseManagement() {
     } catch (error) {
       console.error('Error saving course:', error);
       toast.error('Failed to save course');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -130,6 +335,7 @@ export function AdminCourseManagement() {
       return;
     }
 
+    setDeletingCourseId(courseId);
     try {
       const response = await fetch(`/api/courses/${courseId}`, {
         method: 'DELETE',
@@ -144,6 +350,8 @@ export function AdminCourseManagement() {
     } catch (error) {
       console.error('Error deleting course:', error);
       toast.error('Failed to delete course');
+    } finally {
+      setDeletingCourseId(null);
     }
   };
 
@@ -312,8 +520,15 @@ export function AdminCourseManagement() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={uploading}>
-                  {editingCourse ? 'Update Course' : 'Create Course'}
+                <Button type="submit" disabled={uploading || isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      {editingCourse ? 'Updating...' : 'Creating...'}
+                    </>
+                  ) : (
+                    editingCourse ? 'Update Course' : 'Create Course'
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -338,76 +553,45 @@ export function AdminCourseManagement() {
           <CardHeader>
             <CardTitle>All Courses</CardTitle>
             <CardDescription>
-              Manage your courses and view access request statistics
+              Drag and drop courses to reorder them. The first 3 courses will be displayed on the home page. Manage your courses and view access request statistics.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[200px]">Course</TableHead>
-                    <TableHead className="min-w-[200px]">Description</TableHead>
-                    <TableHead className="min-w-[100px]">Requests</TableHead>
-                    <TableHead className="min-w-[100px]">Created</TableHead>
-                    <TableHead className="min-w-[120px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-              <TableBody>
-                {courses.map((course) => (
-                  <TableRow key={course.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{course.title}</div>
-                        {course.pageLink && (
-                          <a 
-                            href={course.pageLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-                          >
-                            <ExternalLink className="h-3 w-3 mr-1" />
-                            View Course
-                          </a>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate">
-                        {course.description || 'No description'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {course._count?.accessRequests || 0} requests
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(course.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(course)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(course.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[50px]">Order</TableHead>
+                      <TableHead className="min-w-[200px]">Course</TableHead>
+                      <TableHead className="min-w-[200px]">Description</TableHead>
+                      <TableHead className="min-w-[100px]">Requests</TableHead>
+                      <TableHead className="min-w-[100px]">Created</TableHead>
+                      <TableHead className="min-w-[120px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <SortableContext
+                      items={courses.map(course => course.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {courses.map((course) => (
+                        <SortableTableRow
+                          key={course.id}
+                          course={course}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          deletingCourseId={deletingCourseId}
+                        />
+                      ))}
+                    </SortableContext>
+                  </TableBody>
+                </Table>
+              </DndContext>
             </div>
           </CardContent>
         </Card>

@@ -5,12 +5,33 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const courseId = searchParams.get('courseId');
 
     if (userId) {
       // Get requests for a specific user
       const requests = await db.accessRequest.findMany({
         where: { userId },
         include: {
+          course: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      return NextResponse.json({ requests });
+    } else if (courseId) {
+      // Get requests for a specific course
+      const requests = await db.accessRequest.findMany({
+        where: { courseId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          },
           course: true
         },
         orderBy: {

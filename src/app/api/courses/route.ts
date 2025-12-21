@@ -11,9 +11,10 @@ export async function GET(request: NextRequest) {
     const courses = await db.course.findMany({
       skip: offset,
       take: limit,
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy: [
+        { order: 'asc' },
+        { createdAt: 'desc' }
+      ]
     });
 
     const total = await db.course.count();
@@ -47,12 +48,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get the maximum order value and add 1
+    const maxOrderResult = await db.course.aggregate({
+      _max: {
+        order: true
+      }
+    });
+    const nextOrder = (maxOrderResult._max.order || 0) + 1;
+
     const course = await db.course.create({
       data: {
         title,
         description,
         bannerImage,
-        pageLink
+        pageLink,
+        order: nextOrder
       }
     });
 

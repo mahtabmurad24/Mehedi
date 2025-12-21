@@ -77,7 +77,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { title, description, bannerImage, pageLink } = await request.json();
+    const { title, description, bannerImage, pageLink, order } = await request.json();
 
     // Check if user is admin
     const sessionCookie = request.cookies.get('user-session');
@@ -106,10 +106,11 @@ export async function PATCH(
     const course = await db.course.update({
       where: { id: params.id },
       data: {
-        ...(title && { title }),
-        ...(description && { description }),
-        ...(bannerImage && { bannerImage }),
-        ...(pageLink && { pageLink })
+        ...(title !== undefined && { title }),
+        ...(description !== undefined && { description }),
+        ...(bannerImage !== undefined && { bannerImage }),
+        ...(pageLink !== undefined && { pageLink }),
+        ...(order !== undefined && { order })
       }
     });
 
