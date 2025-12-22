@@ -19,9 +19,9 @@ export async function GET(request: NextRequest) {
         ]
       });
 
-      // If all courses have order = 0, set initial order values based on createdAt
-      const maxOrder = Math.max(...courses.map(c => c.order || 0));
-      if (maxOrder === 0 && courses.length > 0) {
+      // If any course has order = 0, set initial order values based on createdAt
+      const hasZeroOrder = courses.some(c => (c.order || 0) === 0);
+      if (hasZeroOrder && courses.length > 0) {
         const allCourses = await db.course.findMany({
           orderBy: { createdAt: 'asc' }
         });
