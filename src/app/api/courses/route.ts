@@ -8,14 +8,24 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
-    const courses = await db.course.findMany({
-      skip: offset,
-      take: limit,
-      orderBy: [
-        { order: 'asc' },
-        { createdAt: 'desc' }
-      ]
-    });
+    let courses;
+    try {
+      courses = await db.course.findMany({
+        skip: offset,
+        take: limit,
+        orderBy: [
+          { order: 'asc' },
+          { createdAt: 'desc' }
+        ]
+      });
+    } catch (error) {
+      // Fallback if order column doesn't exist
+      courses = await db.course.findMany({
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      });
+    }
 
     const total = await db.course.count();
 
