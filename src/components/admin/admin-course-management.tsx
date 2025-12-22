@@ -39,8 +39,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { CSS } from '@dnd-kit/utilities';
-
 interface Course {
   id: string;
   title: string;
