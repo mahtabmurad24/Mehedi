@@ -11,7 +11,10 @@ export async function GET(request: NextRequest) {
     const courses = await db.course.findMany({
       skip: offset,
       take: limit,
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { order: 'asc' },
+        { createdAt: 'desc' }
+      ]
     });
 
     const total = await db.course.count();
