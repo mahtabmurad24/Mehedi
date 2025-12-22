@@ -18,6 +18,31 @@ export async function GET(request: NextRequest) {
           { createdAt: 'desc' }
         ]
       });
+
+      // If all courses have order = 0, set initial order values based on createdAt
+      const maxOrder = Math.max(...courses.map(c => c.order || 0));
+      if (maxOrder === 0 && courses.length > 0) {
+        const allCourses = await db.course.findMany({
+          orderBy: { createdAt: 'asc' }
+        });
+        await db.$transaction(
+          allCourses.map((course, index) =>
+            db.course.update({
+              where: { id: course.id },
+              data: { order: index + 1 }
+            })
+          )
+        );
+        // Refetch with updated order
+        courses = await db.course.findMany({
+          skip: offset,
+          take: limit,
+          orderBy: [
+            { order: 'asc' },
+            { createdAt: 'desc' }
+          ]
+        });
+      }
     } catch (error) {
       // Fallback if order column doesn't exist
       courses = await db.course.findMany({
