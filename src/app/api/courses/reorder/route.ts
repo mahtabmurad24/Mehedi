@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest) {
     const userSession = JSON.parse(sessionCookie.value);
 
     // Check if user is admin
-    const user = await db.user.findUnique({
+    const user = await db.users.findUnique({
       where: { id: userSession.id }
     });
 
@@ -35,20 +35,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    try {
-      // Update orders in a transaction
-      await db.$transaction(
-        courseOrders.map(({ id, order }: { id: string; order: number }) =>
-          db.course.update({
-            where: { id },
-            data: { order }
-          })
-        )
-      );
-    } catch (error) {
-      // Fallback if order column doesn't exist - just return success without updating
-      console.log('Order column not available, skipping order updates');
-    }
+    // Update orders in a transaction
+    await db.$transaction(
+      courseOrders.map(({ id, order }: { id: string; order: number }) =>
+        db.courses.update({
+          where: { id },
+          data: { order }
+        })
+      )
+    );
 
     return NextResponse.json({
       message: 'Course order updated successfully'

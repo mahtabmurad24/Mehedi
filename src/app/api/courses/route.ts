@@ -76,29 +76,20 @@ export async function POST(request: NextRequest) {
   try {
     const { title, description, bannerImage, pageLink } = await request.json();
 
-    if (!title || !bannerImage || !pageLink) {
+    if (!title || !description || !bannerImage || !pageLink) {
       return NextResponse.json(
-        { error: 'Title, banner image, and page link are required' },
+        { error: 'All fields are required: title, description, bannerImage, pageLink' },
         { status: 400 }
       );
     }
 
-    // Get the current max order to assign the next order
-    const maxOrderResult = await db.courses.aggregate({
-      _max: {
-        order: true
-      }
-    });
-    const nextOrder = (maxOrderResult._max.order || 0) + 1;
-
-    const course = await db.courses.create({
+    const course = await db.course.create({
       data: {
         title,
         description,
         bannerImage,
-        pageLink,
-        order: nextOrder
-      } as any
+        pageLink
+      }
     });
 
     return NextResponse.json(
