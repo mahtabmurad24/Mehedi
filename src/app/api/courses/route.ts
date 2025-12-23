@@ -76,9 +76,9 @@ export async function POST(request: NextRequest) {
   try {
     const { title, description, bannerImage, pageLink } = await request.json();
 
-    if (!title || !description || !bannerImage || !pageLink) {
+    if (!title || !bannerImage || !pageLink) {
       return NextResponse.json(
-        { error: 'All fields are required: title, description, bannerImage, pageLink' },
+        { error: 'Title, banner image, and page link are required' },
         { status: 400 }
       );
     }
