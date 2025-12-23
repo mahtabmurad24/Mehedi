@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const course = await db.course.create({
+    const course = await db.courses.create({
       data: {
         title,
         description,
