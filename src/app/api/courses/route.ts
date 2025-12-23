@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         bannerImage,
         pageLink,
         order: nextOrder
-      }
+      } as any
     });
 
     return NextResponse.json(
