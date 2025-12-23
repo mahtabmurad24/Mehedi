@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     let courses;
     try {
-      courses = await db.course.findMany({
+      courses = await db.courses.findMany({
         skip: offset,
         take: limit,
         orderBy: [
@@ -22,19 +22,19 @@ export async function GET(request: NextRequest) {
       // If any course has order = 0, set initial order values based on createdAt
       const hasZeroOrder = courses.some(c => (c.order || 0) === 0);
       if (hasZeroOrder && courses.length > 0) {
-        const allCourses = await db.course.findMany({
+        const allCourses = await db.courses.findMany({
           orderBy: { createdAt: 'asc' }
         });
         await db.$transaction(
           allCourses.map((course, index) =>
-            db.course.update({
+            db.courses.update({
               where: { id: course.id },
               data: { order: index + 1 }
             })
           )
         );
         // Refetch with updated order
-        courses = await db.course.findMany({
+        courses = await db.courses.findMany({
           skip: offset,
           take: limit,
           orderBy: [
@@ -45,14 +45,14 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       // Fallback if order column doesn't exist
-      courses = await db.course.findMany({
+      courses = await db.courses.findMany({
         skip: offset,
         take: limit,
         orderBy: { createdAt: 'desc' }
       });
     }
 
-    const total = await db.course.count();
+    const total = await db.courses.count();
 
     return NextResponse.json({
       courses,
@@ -83,12 +83,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const course = await db.course.create({
+    // Get the current max order to assign the next order
+    const maxOrderResult = await db.courses.aggregate({
+      _max: {
+        order: true
+      }
+    });
+    const nextOrder = (maxOrderResult._max.order || 0) + 1;
+
+    const course = await db.courses.create({
       data: {
         title,
         description,
         bannerImage,
-        pageLink
+        pageLink,
+        order: nextOrder
       }
     });
 
