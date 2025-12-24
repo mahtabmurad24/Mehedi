@@ -53,7 +53,11 @@ export async function GET(request: NextRequest) {
         take: limit,
         orderBy: { createdAt: 'desc' }
       });
-      total = await db.courses.count();
+      try {
+        total = await db.courses.count();
+      } catch (countError) {
+        total = 0; // Fallback if count fails
+      }
     }
 
     return NextResponse.json({
