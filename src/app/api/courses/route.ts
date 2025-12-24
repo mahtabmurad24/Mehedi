@@ -3,6 +3,17 @@ import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('DB object:', typeof db);
+    console.log('DB courses:', typeof db?.courses);
+
+    if (!db) {
+      throw new Error('Database connection not initialized');
+    }
+
+    if (!db.courses) {
+      throw new Error('Courses model not available in database client');
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -28,7 +39,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get courses error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
