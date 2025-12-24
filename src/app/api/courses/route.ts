@@ -8,57 +8,13 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
-    let courses;
-    let total;
-    try {
-      courses = await db.courses.findMany({
-        skip: offset,
-        take: limit,
-        orderBy: [
-          { order: 'asc' },
-          { createdAt: 'desc' }
-        ]
-      });
+    const courses = await db.courses.findMany({
+      skip: offset,
+      take: limit,
+      orderBy: { createdAt: 'desc' }
+    });
 
-      // If any course has order = 0, set initial order values based on createdAt
-      const hasZeroOrder = courses.some(c => (c.order || 0) === 0);
-      if (hasZeroOrder && courses.length > 0) {
-        const allCourses = await db.courses.findMany({
-          orderBy: { createdAt: 'asc' }
-        });
-        await db.$transaction(
-          allCourses.map((course, index) =>
-            db.courses.update({
-              where: { id: course.id },
-              data: { order: index + 1 }
-            })
-          )
-        );
-        // Refetch with updated order
-        courses = await db.courses.findMany({
-          skip: offset,
-          take: limit,
-          orderBy: [
-            { order: 'asc' },
-            { createdAt: 'desc' }
-          ]
-        });
-      }
-
-      total = await db.courses.count();
-    } catch (error) {
-      // Fallback if order column doesn't exist or other db errors
-      courses = await db.courses.findMany({
-        skip: offset,
-        take: limit,
-        orderBy: { createdAt: 'desc' }
-      });
-      try {
-        total = await db.courses.count();
-      } catch (countError) {
-        total = 0; // Fallback if count fails
-      }
-    }
+    const total = await db.courses.count();
 
     return NextResponse.json({
       courses,
