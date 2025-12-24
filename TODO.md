@@ -1,10 +1,6 @@
-# Fix 500 Errors in API Endpoints
+# TODO: Remove Drag-and-Drop Functionality and Fix Build
 
-## Tasks
-- [ ] Fix model names in src/app/api/access-requests/route.ts: db.accessRequest -> db.access_requests
-- [ ] Fix model names in src/app/api/auth/login/route.ts: db.user -> db.users
-- [ ] Fix model names in src/app/api/users/route.ts: db.user -> db.users
-- [ ] Remove order-related dependencies from package.json
-- [ ] Remove order-related files and code
-- [ ] Run prisma generate
-- [ ] Test API endpoints
+- [x] Edit src/components/admin/admin-course-management.tsx to remove @dnd-kit imports, sensors, handleDragEnd, DndContext, SortableContext, and replace SortableTableRow with standard TableRow (keep order display, remove GripVertical)
+- [x] Run npm uninstall @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
+- [x] Test build locally with npm run build
+- [ ] Commit and push changes

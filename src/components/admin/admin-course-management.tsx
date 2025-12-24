@@ -18,26 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, ExternalLink, GripVertical } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { Plus, Edit, Trash2, ExternalLink } from 'lucide-react';
 
 interface Course {
   id: string;
@@ -54,101 +35,7 @@ interface Course {
   };
 }
 
-interface SortableTableRowProps {
-  course: Course;
-  onEdit: (course: Course) => void;
-  onDelete: (courseId: string) => void;
-  deletingCourseId: string | null;
-}
 
-function SortableTableRow({ course, onEdit, onDelete, deletingCourseId }: SortableTableRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: course.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <TableRow ref={setNodeRef} style={style}>
-      <TableCell>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-gray-500">#{course.order}</span>
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center space-x-2">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab hover:bg-gray-100 p-1 rounded"
-          >
-            <GripVertical className="h-4 w-4 text-gray-400" />
-          </button>
-          <div>
-            <div className="font-medium">{course.title}</div>
-            {course.pageLink && (
-              <a 
-                href={course.pageLink} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                View Course
-              </a>
-            )}
-          </div>
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="max-w-xs truncate">
-          {course.description || 'No description'}
-        </div>
-      </TableCell>
-      <TableCell>
-        <Badge variant="outline">
-          {course._count?.accessRequests || 0} requests
-        </Badge>
-      </TableCell>
-      <TableCell>
-        {new Date(course.createdAt).toLocaleDateString()}
-      </TableCell>
-      <TableCell>
-        <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(course)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete(course.id)}
-            className="text-red-600 hover:text-red-800"
-            disabled={deletingCourseId === course.id}
-          >
-            {deletingCourseId === course.id ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-            ) : (
-              <Trash2 className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
-  );
-}
 
 export function AdminCourseManagement() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -166,12 +53,7 @@ export function AdminCourseManagement() {
     pageLink: ''
   });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+
 
   useEffect(() => {
     fetchCourses();
@@ -240,48 +122,7 @@ export function AdminCourseManagement() {
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = courses.findIndex((course) => course.id === active.id);
-      const newIndex = courses.findIndex((course) => course.id === over.id);
-
-      const reorderedCourses = arrayMove(courses, oldIndex, newIndex);
-
-      // Update local state immediately for better UX
-      setCourses(reorderedCourses);
-
-      // Update order values (1-based indexing)
-      const courseOrders = reorderedCourses.map((course, index) => ({
-        id: course.id,
-        order: index + 1
-      }));
-
-      try {
-        const response = await fetch('/api/courses/reorder', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ courseOrders }),
-        });
-
-        if (!response.ok) {
-          // Revert on error
-          setCourses(courses);
-          toast.error('Failed to update course order');
-        } else {
-          toast.success('Course order updated successfully');
-        }
-      } catch (error) {
-        // Revert on error
-        setCourses(courses);
-        console.error('Error updating course order:', error);
-        toast.error('Failed to update course order');
-      }
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -556,40 +397,82 @@ export function AdminCourseManagement() {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[50px]">Order</TableHead>
-                      <TableHead className="min-w-[200px]">Course</TableHead>
-                      <TableHead className="min-w-[200px]">Description</TableHead>
-                      <TableHead className="min-w-[100px]">Requests</TableHead>
-                      <TableHead className="min-w-[100px]">Created</TableHead>
-                      <TableHead className="min-w-[120px]">Actions</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[50px]">Order</TableHead>
+                    <TableHead className="min-w-[200px]">Course</TableHead>
+                    <TableHead className="min-w-[200px]">Description</TableHead>
+                    <TableHead className="min-w-[100px]">Requests</TableHead>
+                    <TableHead className="min-w-[100px]">Created</TableHead>
+                    <TableHead className="min-w-[120px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {courses.map((course) => (
+                    <TableRow key={course.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-500">#{course.order}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{course.title}</div>
+                          {course.pageLink && (
+                            <a
+                              href={course.pageLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              View Course
+                            </a>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate">
+                          {course.description || 'No description'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {course._count?.accessRequests || 0} requests
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(course.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onEdit(course)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onDelete(course.id)}
+                            className="text-red-600 hover:text-red-800"
+                            disabled={deletingCourseId === course.id}
+                          >
+                            {deletingCourseId === course.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <SortableContext
-                      items={courses.map(course => course.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {courses.map((course) => (
-                        <SortableTableRow
-                          key={course.id}
-                          course={course}
-                          onEdit={handleEdit}
-                          onDelete={handleDelete}
-                          deletingCourseId={deletingCourseId}
-                        />
-                      ))}
-                    </SortableContext>
-                  </TableBody>
-                </Table>
-              </DndContext>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
