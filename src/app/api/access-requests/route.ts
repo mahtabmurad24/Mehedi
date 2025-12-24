@@ -9,10 +9,10 @@ export async function GET(request: NextRequest) {
 
     if (userId) {
       // Get requests for a specific user
-      const requests = await db.accessRequest.findMany({
+      const requests = await db.access_requests.findMany({
         where: { userId },
         include: {
-          course: true
+          courses: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -22,17 +22,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ requests });
     } else if (courseId) {
       // Get requests for a specific course
-      const requests = await db.accessRequest.findMany({
+      const requests = await db.access_requests.findMany({
         where: { courseId },
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               email: true,
               name: true
             }
           },
-          course: true
+          courses: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -42,16 +42,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ requests });
     } else {
       // Get all requests (for admin)
-      const requests = await db.accessRequest.findMany({
+      const requests = await db.access_requests.findMany({
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               email: true,
               name: true
             }
           },
-          course: true
+          courses: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     const userSession = JSON.parse(sessionCookie.value);
 
     // Check if request already exists
-    const existingRequest = await db.accessRequest.findFirst({
+    const existingRequest = await db.access_requests.findFirst({
       where: {
         userId: userSession.id,
         courseId
@@ -99,14 +99,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const accessRequest = await db.accessRequest.create({
+    const accessRequest = await db.access_requests.create({
       data: {
         userId: userSession.id,
         courseId,
         message
       },
       include: {
-        course: true
+        courses: true
       }
     });
 
