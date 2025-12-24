@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     let courses;
+    let total;
     try {
       courses = await db.courses.findMany({
         skip: offset,
@@ -43,16 +44,17 @@ export async function GET(request: NextRequest) {
           ]
         });
       }
+
+      total = await db.courses.count();
     } catch (error) {
-      // Fallback if order column doesn't exist
+      // Fallback if order column doesn't exist or other db errors
       courses = await db.courses.findMany({
         skip: offset,
         take: limit,
         orderBy: { createdAt: 'desc' }
       });
+      total = await db.courses.count();
     }
-
-    const total = await db.courses.count();
 
     return NextResponse.json({
       courses,
