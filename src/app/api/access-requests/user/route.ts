@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
 
     const userSession = JSON.parse(sessionCookie.value);
 
-    const requests = await db.accessRequest.findMany({
+    const requests = await db.access_requests.findMany({
       where: { userId: userSession.id },
       include: {
-        course: true
+        courses: true
       },
       orderBy: {
         createdAt: 'desc'

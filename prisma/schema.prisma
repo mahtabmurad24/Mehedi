@@ -8,14 +8,14 @@ datasource db {
 }
 
 model access_requests {
-  id        String        @id
+  id        String        @id @default(cuid())
   status    RequestStatus @default(PENDING)
   message   String?
   adminNote String?
   userId    String
   courseId  String
   createdAt DateTime      @default(now())
-  updatedAt DateTime
+  updatedAt DateTime      @updatedAt
   courses   courses       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   users     users         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -25,14 +25,14 @@ model access_requests {
 }
 
 model courses {
-  id              String            @id
+  id              String            @id @default(cuid())
   title           String
   description     String?
   bannerText      String?
   bannerImage     String?
   pageLink        String?
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime          @updatedAt
   access_requests access_requests[]
 }
 

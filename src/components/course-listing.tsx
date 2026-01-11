@@ -37,7 +37,7 @@ export function CourseListing({ onLoginClick }: CourseListingProps = {}) {
   const [userRequests, setUserRequests] = useState<UserRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<string | undefined>(undefined);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -105,6 +105,7 @@ export function CourseListing({ onLoginClick }: CourseListingProps = {}) {
       toast.error('Failed to send request');
     } finally {
       setSubmitting(false);
+      setSelectedCourse(undefined);
     }
   };
 

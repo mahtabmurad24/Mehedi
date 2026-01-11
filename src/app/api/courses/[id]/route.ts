@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const course = await db.course.findUnique({
+    const course = await db.courses.findUnique({
       where: { id: params.id }
     });
 
@@ -44,7 +44,7 @@ export async function DELETE(
     const userSession = JSON.parse(sessionCookie.value);
 
     // Check if user is admin
-    const user = await db.user.findUnique({
+    const user = await db.users.findUnique({
       where: { id: userSession.id }
     });
 
@@ -56,7 +56,7 @@ export async function DELETE(
     }
 
     // Delete the course
-    await db.course.delete({
+    await db.courses.delete({
       where: { id: params.id }
     });
 
@@ -91,7 +91,7 @@ export async function PATCH(
     const userSession = JSON.parse(sessionCookie.value);
 
     // Check if user is admin
-    const user = await db.user.findUnique({
+    const user = await db.users.findUnique({
       where: { id: userSession.id }
     });
 
@@ -103,7 +103,7 @@ export async function PATCH(
     }
 
     // Update the course
-    const course = await db.course.update({
+    const course = await db.courses.update({
       where: { id: params.id },
       data: {
         ...(title !== undefined && { title }),

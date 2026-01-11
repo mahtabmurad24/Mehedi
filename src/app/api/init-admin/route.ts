@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash('mehedi@dmin', 12);
 
     // Create admin user
-    const admin = await db.user.create({
+    const admin = await db.users.create({
       data: {
         email: 'admin@mehedimath.com',
         password: hashedPassword,

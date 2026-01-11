@@ -13,7 +13,7 @@ import { CourseCard } from '@/components/course-card';
 
 export default function Home() {
   const { user, loading, setShowAuthModal } = useAuth();
-  const [featuredCourses, setFeaturedCourses] = useState([]);
+  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
 
   useEffect(() => {

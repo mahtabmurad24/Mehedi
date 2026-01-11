@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
       include: {
         _count: {
           select: {
-            accessRequests: true
+            access_requests: true
           }
         }
       },

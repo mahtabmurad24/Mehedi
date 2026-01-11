@@ -20,7 +20,7 @@ export async function PATCH(
     const userSession = JSON.parse(sessionCookie.value);
 
     // Check if user is admin
-    const user = await db.user.findUnique({
+    const user = await db.users.findUnique({
       where: { id: userSession.id }
     });
 
@@ -31,21 +31,21 @@ export async function PATCH(
       );
     }
 
-    const accessRequest = await db.accessRequest.update({
+    const accessRequest = await db.access_requests.update({
       where: { id: params.id },
       data: {
         status,
         adminNote
       },
       include: {
-        user: {
+        users: {
           select: {
             id: true,
             email: true,
             name: true
           }
         },
-        course: true
+        courses: true
       }
     });
 
