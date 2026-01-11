@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: NextRequest) {
   try {
     // Check if admin already exists
-    const existingAdmin = await db.user.findUnique({
+    const existingAdmin = await db.users.findUnique({
       where: { email: 'admin@mehedimath.com' }
     });
 

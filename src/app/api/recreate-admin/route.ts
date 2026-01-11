@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: NextRequest) {
   try {
     // Delete existing admin user if exists
-    await db.user.deleteMany({
+    await db.users.deleteMany({
       where: { email: 'admin@mehedimath.com' }
     });
 
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash('mehedi@dmin', 12);
 
     // Create admin user
-    const admin = await db.user.create({
+    const admin = await db.users.create({
       data: {
         email: 'admin@mehedimath.com',
         password: hashedPassword,

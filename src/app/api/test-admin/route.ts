@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user
-    const user = await db.user.findUnique({
+    const user = await db.users.findUnique({
       where: { email }
     });
 
